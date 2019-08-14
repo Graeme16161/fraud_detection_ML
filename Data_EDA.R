@@ -153,3 +153,26 @@ train_transaction %>%
        x = "Percentage Fraud")+ 
   scale_y_continuous(labels = comma)+
   geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = .7)
+
+
+train_transaction %>%
+  select(isFraud,R_emaildomain,P_emaildomain)%>%
+  mutate(emails = email_sit(P_emaildomain, R_emaildomain))%>%
+  group_by(emails)%>%
+  summarise(count = n())%>%
+  ggplot(aes(emails,count)) +
+  geom_bar(stat = "identity",width = .5)+
+  coord_flip()+
+  labs(title = "Email Info",
+       y = "Count",
+       x = "Email Info")+ 
+  scale_y_continuous(labels = comma)+
+  geom_text(aes(label=count),  size=3.5, nudge_y = 20000)
+
+
+#fraud through time
+
+train_transaction %>%
+  filter(isFraud == 1)%>%
+  ggplot(aes(TransactionDT))+
+  geom_histogram()
