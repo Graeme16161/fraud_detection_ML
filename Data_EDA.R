@@ -6,6 +6,7 @@ setwd('C:/Users/gakel/Documents/Bootcamp/Capstone')
 train_identity <- read_csv("data/train_identity.csv")
 train_transaction <- read_csv("data/train_transaction.csv")
 
+train_transaction <- left_join(train_transaction,train_identity, by = 'TransactionID')
 
 #ggsave("plots/missing_data.jpeg",plot = g,dpi = 320, width = 8, height = 4)
 
@@ -100,7 +101,7 @@ train_transaction %>%
   summarise(total = n(),total_f = sum(isFraud))%>%
   mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
   arrange(desc(percent_fraud))%>%
-  top_n(15,percent_fraud) %>%
+  top_n(30,desc(percent_fraud)) %>%
   ggplot(aes(reorder(P_emaildomain,percent_fraud),percent_fraud))+
   geom_bar(stat = "identity")+
   coord_flip()+
@@ -108,7 +109,7 @@ train_transaction %>%
        y = "",
        x = "Percentage Fraud")+ 
   scale_y_continuous(labels = comma)+
-  geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = 2)
+  geom_text(aes(label=total),  size=3.5, nudge_y = 2)
 
 
 train_transaction %>%
@@ -124,7 +125,7 @@ train_transaction %>%
        y = "",
        x = "Percentage Fraud")+ 
   scale_y_continuous(labels = comma)+
-  geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = 4)
+  geom_text(aes(label=total),  size=3.5, nudge_y = 4)
 
 
 ## email situatoin
@@ -170,9 +171,30 @@ train_transaction %>%
   geom_text(aes(label=count),  size=3.5, nudge_y = 20000)
 
 
-#fraud through time
 
+#id_30
 train_transaction %>%
-  filter(isFraud == 1)%>%
-  ggplot(aes(TransactionDT))+
-  geom_histogram()
+  group_by(id_30) %>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  filter(total > 1000)%>%
+  arrange(desc(percent_fraud))%>%
+  top_n(30,percent_fraud) %>%
+  ggplot(aes(reorder(id_30,percent_fraud),percent_fraud))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  labs(title = "id_31 by Fraud Percentage (Top 30)",
+       y = "",
+       x = "Percentage Fraud")+ 
+  scale_y_continuous(labels = comma)+
+  geom_text(aes(label=total),  size=3.5, nudge_y = 2)
+
+train_transaction%>%
+  select(id_33,isFraud)%>%
+  drop_na()%>%
+  separate(id_33, c("L","W"),sep = "x")%>%
+  mutate(pixels = as.numeric(L)*as.numeric(W))%>%
+  group_by(isFraud)%>%
+  summarise(m = mean(pixels))
+
+
