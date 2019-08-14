@@ -4,3 +4,7 @@
 *.pdf
 *.jpg
 *.RData
+*.Rhistory
+*.docx
+*.tmp
+
