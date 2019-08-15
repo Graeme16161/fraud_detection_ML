@@ -173,11 +173,11 @@ train_transaction %>%
 
 
 #id_30
-train_transaction %>%
+t = train_transaction %>%
   group_by(id_30) %>%
   summarise(total = n(),total_f = sum(isFraud))%>%
   mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
-  filter(total > 1000)%>%
+  filter(total > 20)%>%
   arrange(desc(percent_fraud))%>%
   top_n(30,percent_fraud) %>%
   ggplot(aes(reorder(id_30,percent_fraud),percent_fraud))+
@@ -198,3 +198,20 @@ train_transaction%>%
   summarise(m = mean(pixels))
 
 
+
+#device info
+t = train_transaction %>%
+  group_by(DeviceInfo) %>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  filter(total > 20)%>%
+  arrange(desc(percent_fraud))%>%
+  top_n(30,percent_fraud) %>%
+  ggplot(aes(reorder(DeviceInfo,percent_fraud),percent_fraud))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  labs(title = "id_31 by Fraud Percentage (Top 30)",
+       y = "",
+       x = "Percentage Fraud")+ 
+  scale_y_continuous(labels = comma)+
+  geom_text(aes(label=total),  size=3.5, nudge_y = 2)

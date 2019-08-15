@@ -294,4 +294,47 @@ X_test = X_test[X_train.columns]
 
 print("Dummification Complete")
 
-### set nans to -999
+
+############### Build Model
+
+from sklearn.model_selection import TimeSeriesSplit
+from xgboost import XGBClassifier
+from sklearn.metrics import roc_auc_score
+
+tscv = TimeSeriesSplit(n_splits=5)
+
+for train_index, test_index in tscv.split(X_train):
+    
+    X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
+    y_train_cv, y_test_cv = target[train_index], target[test_index]
+    
+    
+    xgb = XGBClassifier(
+        n_estimators=1000,
+        max_depth=9,
+        learning_rate=0.048,
+        subsample=0.85,
+        colsample_bytree=0.85,
+        tree_method='gpu_hist', 
+        reg_alpha=0.15,
+        reg_lamdba=0.85
+    )
+    
+    xgb.fit(X_train_cv,y_train_cv)
+    
+    val=xgb.predict_proba(X_test_cv)[:,1]
+    
+    print('ROC accuracy: {}'.format(roc_auc_score(y_test_cv, val)))
+
+
+
+
+
+
+
+
+
+
+
+
+
