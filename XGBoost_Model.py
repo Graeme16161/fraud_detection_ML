@@ -41,10 +41,10 @@ del test_identity,test_transaction
 print("identity and transaction data frames have been merged")
 
 #### use 5% of data to star (comment out to actually run)
-train = train.sample(frac = .05)
-test = test.sample(frac = .05)
+#train = train.sample(frac = .05)
+#test = test.sample(frac = .05)
 
-print("Data reduced to 5%!!!")
+#print("Data reduced to 5%!!!")
 
 # new feature based on email domains
 def domains_process(row): 
@@ -305,8 +305,8 @@ tscv = TimeSeriesSplit(n_splits=5)
 
 for train_index, test_index in tscv.split(X_train):
     
-    X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
-    y_train_cv, y_test_cv = target[train_index], target[test_index]
+    X_train_cv, X_test_cv = X_train.iloc[train_index], X_train.iloc[test_index]
+    y_train_cv, y_test_cv = target.iloc[train_index], target.iloc[test_index]
     
     
     xgb = XGBClassifier(
@@ -315,7 +315,7 @@ for train_index, test_index in tscv.split(X_train):
         learning_rate=0.048,
         subsample=0.85,
         colsample_bytree=0.85,
-        tree_method='gpu_hist', 
+        tree_method='hist', 
         reg_alpha=0.15,
         reg_lamdba=0.85
     )
@@ -329,8 +329,14 @@ for train_index, test_index in tscv.split(X_train):
 
 
 
+xgb.fit(X_train,target)
+val=xgb.predict_proba(X_test)[:,1]
 
+#create data frame of results
+test_result = pd.DataFrame({'TransactionID': X_test.index, 'isFraud' : val})
 
+#Save to csv file in submission format
+test_result.to_csv('XGB_Submit.csv',index=False)
 
 
 
