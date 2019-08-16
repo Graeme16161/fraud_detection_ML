@@ -305,7 +305,7 @@ from sklearn.metrics import roc_auc_score
 #Define hyperparameter tune grid
 param_grid = {
         'min_child_weight': [1],
-        'gamma':[5,6,7,8,9],
+        'gamma':[8,9,10],
         'subsample': [0.7],
         'learning_rate':[.03],
         'max_depth': [11]
@@ -318,7 +318,7 @@ xgb = XGBClassifier(
         reg_alpha=0.15,
         reg_lamdba=0.85)
 
-cv = cv_50_50(len(X_train.index))
+cv = cv_50_50(len(X_train.index),folds = 5)
 
 
 CV_object = GridSearchCV(estimator = xgb,
@@ -336,7 +336,7 @@ print(CV_object.best_params_)
 print("Best Score:")
 print(CV_object.best_score_)
 
-#{'gamma': 7, 'learning_rate': 0.03, 'max_depth': 11, 'min_child_weight': 1, 'subsample': 0.7}
+#{'gamma': 8, 'learning_rate': 0.03, 'max_depth': 11, 'min_child_weight': 1, 'subsample': 0.7}
 ############### Build Model
 
 from sklearn.model_selection import TimeSeriesSplit

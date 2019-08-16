@@ -16,7 +16,7 @@ def cv_50_50(n, folds = 3):
     size = int(mid*(folds - 1)/folds)
     cv_indices = []
     
-    for i in range(3):
+    for i in range(folds):
         train_indices = np.random.choice(range(mid),size = size, replace = False)
         test_indices = np.random.choice(range(mid,n),size = size, replace = False)
         
