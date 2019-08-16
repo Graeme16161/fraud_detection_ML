@@ -41,10 +41,10 @@ del test_identity,test_transaction
 print("identity and transaction data frames have been merged")
 
 #### use 5% of data to star (comment out to actually run)
-#train = train.sample(frac = .05)
-#test = test.sample(frac = .05)
+train = train.sample(frac = .05)
+test = test.sample(frac = .05)
 
-#print("Data reduced to 5%!!!")
+print("Data reduced to 5%!!!")
 
 # new feature based on email domains
 def domains_process(row): 
@@ -269,7 +269,8 @@ test.drop('DeviceInfo', axis=1, inplace = True)
 
 print("Device Info Risk assigned")
 
-
+train.to_csv('train_processed.csv',index=False)
+test.to_csv('test_processed.csv',index=False)
 
 #########################################################################################
 ##create target, training and testing data frames
@@ -295,11 +296,52 @@ X_test = X_test[X_train.columns]
 print("Dummification Complete")
 
 
+############## grid search params
+from cv_50_50 import cv_50_50
+from sklearn.model_selection import GridSearchCV
+from xgboost import XGBClassifier
+from sklearn.metrics import roc_auc_score
+
+#Define hyperparameter tune grid
+param_grid = {
+        'min_child_weight': [1],
+        'gamma':[5,6,7,8,9],
+        'subsample': [0.7],
+        'learning_rate':[.03],
+        'max_depth': [11]
+        }
+
+xgb = XGBClassifier(
+        n_estimators=1000,
+        colsample_bytree=0.85,
+        tree_method='hist', 
+        reg_alpha=0.15,
+        reg_lamdba=0.85)
+
+cv = cv_50_50(len(X_train.index))
+
+
+CV_object = GridSearchCV(estimator = xgb,
+                         param_grid = param_grid,
+                         n_jobs=4,
+                         scoring = 'roc_auc',
+                         cv = cv,
+                         iid=False,
+                         verbose=1)
+
+CV_object.fit(X_train, target)
+
+print("Best Parameters:")
+print(CV_object.best_params_)
+print("Best Score:")
+print(CV_object.best_score_)
+
+#{'gamma': 7, 'learning_rate': 0.03, 'max_depth': 11, 'min_child_weight': 1, 'subsample': 0.7}
 ############### Build Model
 
 from sklearn.model_selection import TimeSeriesSplit
 from xgboost import XGBClassifier
-from sklearn.metrics import roc_auc_score
+
 
 tscv = TimeSeriesSplit(n_splits=5)
 
