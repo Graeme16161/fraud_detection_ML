@@ -4,9 +4,10 @@ Spyder Editor
 
 This is a temporary script file.
 """
-
+import numpy as np
 import pandas as pd
 import os
+import gc
 
 os.chdir('C:/Users/gakel/Documents/Bootcamp/Capstone')
 
@@ -37,7 +38,7 @@ del train_identity,train_transaction
 test  = test_transaction.merge(test_identity, how = "left",
                                left_index = True, right_index = True)
 del test_identity,test_transaction
-
+gc.collect()
 print("identity and transaction data frames have been merged")
 
 #### use 5% of data to star (comment out to actually run)
@@ -45,6 +46,19 @@ train = train.sample(frac = .05)
 test = test.sample(frac = .05)
 
 print("Data reduced to 5%!!!")
+
+#create pixal feature
+new = train["id_33"].str.split("x", n = 1, expand = True).fillna(0)
+train["pixel_n"]= new[0].astype(int) * new[1].astype(int)
+train.drop(columns =["id_33"], inplace = True) 
+
+new = test["id_33"].str.split("x", n = 1, expand = True).fillna(0)
+test["pixel_n"]= new[0].astype(int) * new[1].astype(int)
+test.drop(columns =["id_33"], inplace = True) 
+
+del new
+
+print("Screen Size Data Converted to Pixels")
 
 # new feature based on email domains
 def domains_process(row): 
@@ -64,7 +78,26 @@ test['email_status'] = test.apply(domains_process, axis=1)
 
 print("Email domain feature created")
 
+
+###########################################################################################
 # seperate domains into levels of risk
+from process_specifics import process_size_row, process_risk_row, process_buckets
+
+features_to_bucket = ['P_emaildomain','R_emaildomain','id_31','id_30','DeviceInfo']
+
+for feature in features_to_bucket:
+    train_buckets, test_buckets, risk_buckets = process_buckets(train, test, feature)
+    
+    train[feature + "_risk"] = train[feature].apply(process_risk_row, buckets=risk_buckets)
+    test[feature + "_risk"] = test[feature].apply(process_risk_row, buckets=risk_buckets)
+    
+    train[feature] = train[feature].apply(process_size_row, buckets=train_buckets)
+    test[feature] = test[feature].apply(process_size_row, buckets=test_buckets)
+    
+    print(feature + " has been bucketized")
+
+
+
 
 extreme_emails = ["protonmail.com"]
 very_high_emails = ["mail.com"]
@@ -107,16 +140,7 @@ test.drop(['R_emaildomain', 'P_emaildomain'], axis=1, inplace = True)
 
 print("Email domain risk assigned")
 
-#create pixal feature
-new = train["id_33"].str.split("x", n = 1, expand = True).fillna(0)
-train["pixel_n"]= new[0].astype(int) * new[1].astype(int)
-train.drop(columns =["id_33"], inplace = True) 
 
-new = test["id_33"].str.split("x", n = 1, expand = True).fillna(0)
-test["pixel_n"]= new[0].astype(int) * new[1].astype(int)
-test.drop(columns =["id_33"], inplace = True) 
-
-print("Screen Size Data Converted to Pixels")
 
 
 #id_31 which is browser
@@ -273,6 +297,53 @@ train.to_csv('train_processed.csv',index=False)
 test.to_csv('test_processed.csv',index=False)
 
 #########################################################################################
+#CODE FROM KAGGLE TO TEST
+
+# New feature - decimal part of the transaction amount
+train['TransactionAmt_decimal'] = ((train['TransactionAmt'] - train['TransactionAmt'].astype(int)) * 1000).astype(int)
+test['TransactionAmt_decimal'] = ((test['TransactionAmt'] - test['TransactionAmt'].astype(int)) * 1000).astype(int)
+
+# Count encoding for card1 feature. 
+# Explained in this kernel: https://www.kaggle.com/nroman/eda-for-cis-fraud-detection
+train['card1_count_full'] = train['card1'].map(pd.concat([train['card1'], test['card1']], ignore_index=True).value_counts(dropna=False))
+test['card1_count_full'] = test['card1'].map(pd.concat([train['card1'], test['card1']], ignore_index=True).value_counts(dropna=False))
+
+# https://www.kaggle.com/fchmiel/day-and-time-powerful-predictive-feature
+train['Transaction_day_of_week'] = np.floor((train['TransactionDT'] / (3600 * 24) - 1) % 7)
+test['Transaction_day_of_week'] = np.floor((test['TransactionDT'] / (3600 * 24) - 1) % 7)
+train['Transaction_hour'] = np.floor(train['TransactionDT'] / 3600) % 24
+test['Transaction_hour'] = np.floor(test['TransactionDT'] / 3600) % 24
+
+
+# =============================================================================
+# for feature in ['id_02__id_20', 'id_02__D8', 'D11__DeviceInfo', 'DeviceInfo__P_emaildomain', 'P_emaildomain__C2', 
+#                 'card2__dist1', 'card1__card5', 'card2__id_20', 'card5__P_emaildomain', 'addr1__card1']:
+# 
+#     f1, f2 = feature.split('__')
+#     train[feature] = train[f1].astype(str) + '_' + train[f2].astype(str)
+#     test[feature] = test[f1].astype(str) + '_' + test[f2].astype(str)
+# 
+#     le = LabelEncoder()
+#     le.fit(list(train[feature].astype(str).values) + list(test[feature].astype(str).values))
+#     train[feature] = le.transform(list(train[feature].astype(str).values))
+#     test[feature] = le.transform(list(test[feature].astype(str).values))
+#     
+# for feature in ['id_34', 'id_36']:
+#     if feature in useful_features:
+#         # Count encoded for both train and test
+#         train[feature + '_count_full'] = train[feature].map(pd.concat([train[feature], test[feature]], ignore_index=True).value_counts(dropna=False))
+#         test[feature + '_count_full'] = test[feature].map(pd.concat([train[feature], test[feature]], ignore_index=True).value_counts(dropna=False))
+#         
+# for feature in ['id_01', 'id_31', 'id_33', 'id_35', 'id_36']:
+#     if feature in useful_features:
+#         # Count encoded separately for train and test
+#         train[feature + '_count_dist'] = train[feature].map(train[feature].value_counts(dropna=False))
+#         test[feature + '_count_dist'] = test[feature].map(test[feature].value_counts(dropna=False))
+# =============================================================================
+
+
+######################################################################################################
+
 ##create target, training and testing data frames
 target = train['isFraud'].copy()
 
