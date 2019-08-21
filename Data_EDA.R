@@ -11,7 +11,7 @@ train_transaction <- left_join(train_transaction,train_identity, by = 'Transacti
 #ggsave("plots/missing_data.jpeg",plot = g,dpi = 320, width = 8, height = 4)
 
 # distribution of target feature
-train_transaction %>%
+g <- train_transaction %>%
   group_by(isFraud)%>%
   summarise(count = n())%>%
   mutate(isFraud1 = ifelse(isFraud == 0,"No","Yes"))%>%
@@ -23,6 +23,8 @@ train_transaction %>%
   scale_y_continuous(labels = comma)+
   geom_text(aes(label=count),  size=3.5, nudge_y = 20000) 
 
+ggsave("plots/target_class_distribution.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
 #Distribution of transaction amount
 ggplot(train_transaction,aes(TransactionAmt))+
   geom_histogram()+
@@ -33,18 +35,21 @@ ggplot(train_transaction,aes(TransactionAmt))+
   scale_x_log10()
 
 # distribution of card type (card4)
-train_transaction %>%
+g <- train_transaction %>%
   group_by(card4)%>%
   summarise(count = n())%>%
   ggplot(aes(card4,count)) +
-  geom_bar(stat = "identity",width = .5)+
+  geom_bar(stat = "identity")+
+  coord_flip()+
   labs(title = "Card Type Used",
        y = "Count",
-       x = "Card Type")+ 
+       x = "")+ 
   scale_y_continuous(labels = comma)+
-  geom_text(aes(label=count),  size=3.5, nudge_y = 15000) 
+  geom_text(aes(label=count),  size=3.5, nudge_y = 25000) 
 
-train_transaction %>%
+ggsave("plots/cards_by_count.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+g <- train_transaction %>%
   group_by(card4) %>%
   summarise(total = n(),total_f = sum(isFraud))%>%
   mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
@@ -53,9 +58,11 @@ train_transaction %>%
   coord_flip()+
   labs(title = "Card Type by Fraud Percentage",
        x = "",
-       y = "Percentage Fraud")+ 
+       y = "Percentage of Transactions that are Fraud")+ 
   scale_y_continuous(labels = comma)+
   geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = .4)
+
+ggsave("plots/cards_by_percent_fraud.jpeg",plot = g,dpi = 320, width = 8, height = 4)
 
 # distribution of transaction type (card6)
 train_transaction %>%
@@ -63,25 +70,27 @@ train_transaction %>%
   summarise(count = n())%>%
   ggplot(aes(card6,count)) +
   geom_bar(stat = "identity",width = .5)+
-  labs(title = "Transaction Type",
+  coord_flip()+
+  labs(title = "Transaction Type Counts",
        y = "Count",
-       x = "Transaction Type")+ 
+       x = "")+ 
   scale_y_continuous(labels = comma)+
-  geom_text(aes(label=count),  size=3.5, nudge_y = 15000) 
+  geom_text(aes(label=count),  size=3.5, nudge_y = 25000) 
 
-train_transaction %>%
+g <- train_transaction %>%
   group_by(card6) %>%
   summarise(total = n(),total_f = sum(isFraud))%>%
   mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
   ggplot(aes(reorder(reorder(card6,percent_fraud),percent_fraud),percent_fraud))+
   geom_bar(stat = "identity")+
   coord_flip()+
-  labs(title = "Transaction Type by Fraud Percentage",
+  labs(title = "Transaction Type by Percentage that are",
        x = "",
        y = "Percentage Fraud")+ 
   scale_y_continuous(labels = comma)+
   geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = .4)
 
+ggsave("plots/transaction_by_percent_fraud.jpeg",plot = g,dpi = 320, width = 8, height = 4)
 
 # distribution of device type
 train_identity %>%
@@ -112,7 +121,7 @@ train_transaction %>%
   geom_text(aes(label=total),  size=3.5, nudge_y = 2)
 
 
-train_transaction %>%
+g <- train_transaction %>%
   group_by(R_emaildomain) %>%
   summarise(total = n(),total_f = sum(isFraud))%>%
   mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
@@ -122,14 +131,26 @@ train_transaction %>%
   geom_bar(stat = "identity")+
   coord_flip()+
   labs(title = "Recipient Domain by Fraud Percentage (Top 15)",
-       y = "",
-       x = "Percentage Fraud")+ 
+       x = "",
+       y = "Percentage Fraud")+ 
   scale_y_continuous(labels = comma)+
-  geom_text(aes(label=total),  size=3.5, nudge_y = 4)
+  geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = 4)
 
+ggsave("plots/R_domain_fraud.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+g <- train_transaction %>%
+  group_by(R_emaildomain) %>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  ggplot(aes(percent_fraud))+
+  geom_histogram()+
+  labs(title = "Recipient Domain by Fraud Percentage Histogram",
+       y = "Count",
+       x = "Percentage Fraud")
+
+ggsave("plots/R_domain_fraud_hist.jpeg",plot = g,dpi = 320, width = 8, height = 4)
 
 ## email situatoin
-
 email_sit <- function(P, R) {
   case_when(
     is.na(P) & is.na(R) ~ "Both\n Emails Missing",
@@ -140,7 +161,7 @@ email_sit <- function(P, R) {
   )
 }
 
-train_transaction %>%
+g <- train_transaction %>%
   select(isFraud,R_emaildomain,P_emaildomain)%>%
   mutate(emails = email_sit(P_emaildomain, R_emaildomain))%>%
   group_by(emails)%>%
@@ -150,10 +171,12 @@ train_transaction %>%
   geom_bar(stat = "identity")+
   coord_flip()+
   labs(title = "Email Information by Fraud Percentage",
-       y = "",
-       x = "Percentage Fraud")+ 
+       x = "",
+       y = "Percentage Fraud")+ 
   scale_y_continuous(labels = comma)+
-  geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = .7)
+  geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = .5)
+
+ggsave("plots/email_status_fraud.jpeg",plot = g,dpi = 320, width = 8, height = 4)
 
 
 train_transaction %>%
@@ -215,3 +238,86 @@ t = train_transaction %>%
        x = "Percentage Fraud")+ 
   scale_y_continuous(labels = comma)+
   geom_text(aes(label=total),  size=3.5, nudge_y = 2)
+
+
+#train['Transaction_day_of_week'] = np.floor((train['TransactionDT'] / (3600 * 24) - 1) % 7)
+
+
+g <- train_transaction %>%
+  mutate(dow = floor((TransactionDT/ (3600 * 24) - 1) %% 7))%>%
+  group_by(dow)%>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  ggplot(aes(dow,percent_fraud))+
+  geom_bar(stat = "identity")+
+  labs(title = "Day of Week by Fraud Percentage",
+       x = "Day of Week",
+       y = "Percentage Fraud")+ 
+  scale_y_continuous(labels = comma)+
+  geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = .2)
+
+ggsave("plots/dow_fraud.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+
+g <- train_transaction %>%
+  mutate(hod = floor((TransactionDT/3600) %% 24))%>%
+  group_by(hod)%>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  ggplot(aes(hod,percent_fraud))+
+  geom_bar(stat = "identity")+
+  labs(title = "Hour of Day by Transaction Fraud Percentage",
+       x = "Hour of Day",
+       y = "Percentage Fraud")+ 
+  scale_y_continuous(labels = comma)+
+  geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = .3)
+
+ggsave("plots/hod_fraud.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+
+
+######### histogram feautres by percent missing
+g <- train_transaction %>% 
+  summarise_each(funs(100*mean(is.na(.))))%>%
+  gather("column","Percentage_Missing")%>%
+  ggplot(aes(Percentage_Missing))+
+  geom_histogram()+
+  labs(title = "Histogram of Feature Missingness",
+       x = "Features by Percentage of Observations Missing",
+       y = "Count")
+  
+ggsave("plots/feature_missing.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+
+##### look for pattern shift with time
+
+g <- train_transaction %>%
+  mutate(bin = cut_interval(TransactionDT, 40))%>%
+  group_by(bin) %>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  ggplot(aes(bin,percent_fraud))+
+  geom_bar(stat = "identity")+
+  labs(title = "Percentage of Fraudulent Transactions Through Time",
+       x = "Sequential Time Bins of Equal Interval",
+       y = "Percentage of Transactions that are Fraudulent")+
+  theme(axis.ticks.x=element_blank(),
+        axis.text.x=element_blank())
+
+ggsave("plots/fraud_through_time.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+g <- train_transaction %>%
+  filter(ProductCD == "H") %>%
+  mutate(bin = cut_interval(TransactionDT, 40))%>%
+  group_by(bin) %>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  ggplot(aes(bin,percent_fraud))+
+  geom_bar(stat = "identity")+
+  labs(title = "Product \"H\" Percentage of Fraudulent Transactions Through Time",
+       x = "Sequential Time Bins of Equal Interval",
+       y = "Percentage of Transactions that are Fraudulent")+
+  theme(axis.ticks.x=element_blank(),
+        axis.text.x=element_blank())
+
+ggsave("plots/Product_H_fraud_through_time.jpeg",plot = g,dpi = 320, width = 8, height = 4)
