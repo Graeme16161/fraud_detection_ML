@@ -2,7 +2,7 @@
 
 Project to classify credit card transactions as fraudulent. Part of Kaggle competition. Data exploration done in R and machine learning done in python. 
 
-< https://www.kaggle.com/c/ieee-fraud-detection/overview>
+https://www.kaggle.com/c/ieee-fraud-detection/overview
 
 ## Important Files and Folders List
 
