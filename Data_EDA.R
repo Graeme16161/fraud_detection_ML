@@ -4,10 +4,24 @@ library(scales)
 setwd('C:/Users/gakel/Documents/Bootcamp/Capstone')
 
 train_identity <- read_csv("data/train_identity.csv")
+test_transaction <- read_csv("data/test_transaction.csv")
+
 train_transaction <- read_csv("data/train_transaction.csv")
+
+
+all_DT <- bind_rows(train_transaction, test_transaction)
+
+g <- all_DT %>%
+  ggplot(aes(TransactionDT))+
+  geom_histogram(bins = 100)+
+  labs(title = "Training Vs Test Sets",
+       y = "Count",
+       x = "Transaction Time (In Seconds)")+ 
+  scale_x_continuous(labels = comma)
 
 train_transaction <- left_join(train_transaction,train_identity, by = 'TransactionID')
 
+ggsave("plots/time_vis.jpeg",plot = g,dpi = 320, width = 8, height = 4)
 #ggsave("plots/missing_data.jpeg",plot = g,dpi = 320, width = 8, height = 4)
 
 # distribution of target feature
@@ -321,3 +335,66 @@ g <- train_transaction %>%
         axis.text.x=element_blank())
 
 ggsave("plots/Product_H_fraud_through_time.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+##################v258
+
+g <- train_transaction %>%
+  mutate(bin = cut_interval(TransactionDT, 5))%>%
+  group_by(bin,V258) %>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  ggplot(aes(V258,percent_fraud))+
+  geom_bar(stat="identity")+
+  facet_wrap(~bin)+
+  labs(title = "Discrete V258 Values by Fraud Percentage",
+       x = "Value of V258",
+       y = "Percentage Fraud")+ 
+  scale_y_continuous(labels = comma)
+
+ggsave("plots/V258.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+###### decimals
+
+g <- train_transaction %>%
+  mutate(f = if_else(as.integer(TransactionAmt*100) != TransactionAmt*100,'Yes','No'))%>%
+  group_by(f) %>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  ggplot(aes(f,percent_fraud))+
+  geom_bar(stat = "identity",width = .5)+
+  labs(title = "Possible Foreign Transaction by Fraud Percentage",
+       y = "Percentage Fraud",
+       x = "Does Amount Variable have More than Two Decimals?")+ 
+  geom_text(aes(label=percent_fraud),  size=3.5, nudge_y = .3) 
+
+ggsave("plots/decimal.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+
+
+
+g <- train_transaction %>%
+  separate(id_33,sep = "x",c("H","W"))%>%
+  mutate(total_pixel = as.integer(H)*as.integer(W))%>%
+  mutate(bin = ntile(total_pixel, 20))%>%
+  group_by(bin) %>%
+  summarise(total = n(),total_f = sum(isFraud))%>%
+  mutate(percent_fraud = round(digits = 2,total_f/total*100))%>%
+  ggplot(aes(bin,percent_fraud))+
+  geom_bar(stat = "identity")+
+  labs(title = "Percentage Fraud by Total Pixels (Binned)",
+       x = "Total Pixels Bins",
+       y = "Percentage of Transactions that are Fraudulent")
+
+ggsave("plots/pixel.jpeg",plot = g,dpi = 320, width = 8, height = 4)
+
+
+train_transaction %>%
+  separate(id_33,sep = "x",c("H","W"))%>%
+  mutate(total_pixel = as.integer(H)*as.integer(W))%>%
+  ggplot(aes(total_pixel,fill = as.factor(isFraud)))+
+  geom_histogram()+ 
+  scale_x_log10(labels = comma)+
+  labs(title = "P",
+       x = "Total Pixels",
+       y = "Count")
+

@@ -186,7 +186,7 @@ for c in category_features:
 # seperate domains into levels of risk
 from process_specifics import process_size_row, process_risk_row, process_buckets
 
-features_to_bucket = ['P_emaildomain','R_emaildomain','id_31','id_30','DeviceInfo']
+features_to_bucket = ['P_emaildomain','R_emaildomain','id_31','id_30','DeviceInfo','addr1','addr2']
 
 for feature in features_to_bucket:
     train_buckets, test_buckets, risk_buckets = process_buckets(train, test, feature)
@@ -539,7 +539,8 @@ xgb = XGBClassifier(
         tree_method='hist', 
         reg_alpha=0.15,
         reg_lamdba=0.85,
-        min_child_weight = 1
+        min_child_weight = 1,
+        scale_pos_weight = 1
     )
 
 
@@ -558,9 +559,17 @@ print("predictions exported to csv file")
 import matplotlib.pylab as plt
 from matplotlib import pyplot
 from xgboost import plot_importance
-plot_importance(xgb, max_num_features=30,importance_type='gain') # top 10 most important features
+plot_importance(xgb, max_num_features=20,importance_type='gain', show_values = False) # top 10 most important features
 plt.show()
 
 
 
 
+fig, ax = plt.subplots(figsize=(8, 4))
+
+plot_importance(xgb, max_num_features=20, importance_type= 'weight',
+                show_values=False, title = "XGBoost Feature Importance (Weight)",height=0.8,ax=ax) 
+#plt.show()
+plt.tight_layout()
+
+plt.savefig('plots/feature_importance_weight.jpeg', dpi=320)
